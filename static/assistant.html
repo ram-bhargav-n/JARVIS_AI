@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080713" />
+    <title>JARVIS | Personal AI Command Interface</title>
+    <link rel="stylesheet" href="/static/assistant.css?v=20261008" />
+    <script src="/static/assistant.js?v=20261008" defer></script>
+  </head>
+  <body>
+    <canvas class="ambient-canvas" id="ambientCanvas" aria-hidden="true"></canvas>
+    <div class="screen-grid" aria-hidden="true"></div>
+
+    <div class="station" id="appShell" aria-hidden="true">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <a class="brand" href="#top" aria-label="JARVIS home">
+            <span class="brand-mark" aria-hidden="true"><span></span></span>
+            <span class="brand-copy">
+              <span class="brand-name" id="brandName">JARVIS</span>
+              <span class="brand-subtitle">PERSONAL INTELLIGENCE SYSTEM</span>
+            </span>
+          </a>
+        </div>
+
+        <div class="topbar-center">
+          <span class="signal-dot" id="topSignal"></span>
+          <span id="topConnection">ESTABLISHING LOCAL LINK</span>
+          <span class="top-separator">/</span>
+          <span>ENCRYPTED SESSION</span>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="quiet-button" id="openHistory" type="button" aria-label="Open conversation history" title="Conversation history">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8m0-5v5h5M12 7v5l3 2" /></svg>
+            <span>HISTORY</span>
+          </button>
+          <button class="quiet-button" id="openVoiceSettings" type="button" aria-label="Open settings" title="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42m12.72 0-1.42-1.42M7.06 7.06 5.64 5.64M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" /></svg>
+            <span>SETTINGS</span>
+          </button>
+          <button class="quiet-button" id="openHelp" type="button" aria-label="Open help" title="Help">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.6 9a2.5 2.5 0 1 1 4.4 1.6c-1.2 1.3-2 1.4-2 3.1m0 3.2h.01" /></svg>
+            <span>HELP</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="dashboard" id="top">
+        <aside class="hud-column hud-left" aria-label="System telemetry">
+          <section class="hud-section">
+            <div class="section-kicker"><span>01</span> SYSTEM TELEMETRY</div>
+            <div class="telemetry-list">
+              <div class="telemetry-row">
+                <span class="telemetry-icon">SYS</span>
+                <span class="telemetry-label">CORE STATE</span>
+                <span class="telemetry-value" id="systemState">IDLE</span>
+              </div>
+              <div class="telemetry-row">
+                <span class="telemetry-icon">MIC</span>
+                <span class="telemetry-label">MICROPHONE</span>
+                <span class="telemetry-value" id="microphoneStatus">STANDBY</span>
+              </div>
+              <div class="telemetry-row">
+                <span class="telemetry-icon">API</span>
+                <span class="telemetry-label">FASTAPI LINK</span>
+                <span class="telemetry-value" id="backendStatus">CHECKING</span>
+              </div>
+              <div class="telemetry-row">
+                <span class="telemetry-icon">LLM</span>
+                <span class="telemetry-label">OLLAMA</span>
+                <span class="telemetry-value" id="ollamaStatus">STANDBY</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="hud-section wake-section">
+            <div class="section-kicker"><span>02</span> VOICE ACCESS</div>
+            <div class="wake-row">
+              <div>
+                <div class="wake-title">Wake phrase</div>
+                <div class="wake-caption" id="wakeCaption">“Hey Jarvis” · browser mic</div>
+              </div>
+              <button class="switch" id="wakeToggle" type="button" role="switch" aria-checked="false" aria-label="Enable wake phrase listening">
+                <span></span>
+              </button>
+            </div>
+            <div class="microphone-note" id="recognitionSupport">VOICE INPUT READY</div>
+            <div class="microphone-note is-warning" id="permissionHint" hidden>Microphone permission required: allow access in your browser site settings, then refresh.</div>
+          </section>
+
+          <section class="hud-section activity-section">
+            <div class="section-heading">
+              <div class="section-kicker"><span>03</span> RECENT COMMANDS</div>
+              <button class="text-button" id="viewAllHistory" type="button">VIEW ALL</button>
+            </div>
+            <ol class="activity-list" id="activityList">
+              <li class="activity-empty">Your command history will appear here.</li>
+            </ol>
+          </section>
+
+          <section class="hud-section task-section">
+            <div class="section-heading">
+              <div class="section-kicker"><span>08</span> TASK LIST</div>
+              <span class="device-count" id="taskCount">00</span>
+            </div>
+            <ul class="task-list" id="taskList">
+              <li class="task-empty">No tasks saved.</li>
+            </ul>
+          </section>
+
+          <div class="left-footnote"><span class="tiny-ring"></span> LOCAL PROCESSING PREFERRED</div>
+        </aside>
+
+        <section class="core-stage" id="coreStage" data-state="idle" aria-label="Assistant core">
+          <div class="stage-heading">
+            <div>
+              <div class="section-kicker"><span>J.A.R.V.I.S.</span> / INFERENCE CHAMBER</div>
+              <div class="stage-subtitle">PERSONAL AI · LOCAL NODE</div>
+            </div>
+            <div class="latency-readout"><span class="signal-dot"></span><span id="stageLinkStatus">LINK STANDBY</span></div>
+          </div>
+
+          <div class="reactor-wrap">
+            <div class="reactor-halo" aria-hidden="true"></div>
+            <div class="reactor" aria-hidden="true">
+              <div class="reactor-ring ring-outer"></div>
+              <div class="reactor-ring ring-middle"></div>
+              <div class="reactor-ring ring-inner"></div>
+              <div class="reactor-ticks"></div>
+              <div class="reactor-core">
+                <div class="core-light"></div>
+                <div class="core-crosshair"></div>
+                <div class="core-monogram">J</div>
+                <div class="core-frequency"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              </div>
+              <div class="orbit-marker marker-a"></div>
+              <div class="orbit-marker marker-b"></div>
+              <div class="orbit-marker marker-c"></div>
+            </div>
+            <div class="reactor-coordinate coordinate-left">51° 30′ 26.4″ N<br />SYSTEM NODE / 01</div>
+            <div class="reactor-coordinate coordinate-right">LOCAL<br />INFERENCE</div>
+          </div>
+
+          <div class="state-readout" aria-live="polite">
+            <div class="state-label" id="stateLabel">SYSTEM READY</div>
+            <div class="state-hint" id="stateHint">Your local assistant is standing by.</div>
+          </div>
+
+          <button class="core-mic-control" id="coreMicButton" type="button" aria-label="Start voice input" title="Start voice input">
+            <span class="core-mic-disc">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.75a3.25 3.25 0 0 0-3.25 3.25v5a3.25 3.25 0 0 0 6.5 0V6A3.25 3.25 0 0 0 12 2.75Z"/><path d="M5.5 10.5v.5a6.5 6.5 0 0 0 13 0v-.5M12 17.5v4m-3 0h6"/></svg>
+            </span>
+            <span class="core-mic-caption" id="coreMicCaption">ACTIVATE VOICE</span>
+          </button>
+
+          <div class="recognized-readout" id="recognizedReadout" aria-live="polite">
+            <span class="readout-label">VOICE TRANSCRIPT</span>
+            <span class="recognized-text" id="recognizedText">Awaiting input</span>
+          </div>
+
+          <article class="response-panel" id="responsePanel" aria-live="polite">
+            <div class="response-topline">
+              <span class="response-emblem" aria-hidden="true">J</span>
+              <span class="response-label" id="responseLabel">JARVIS RESPONSE</span>
+              <span class="response-time" id="responseTime" title="Elapsed time for the latest assistant response">—</span>
+            </div>
+            <p class="response-text" id="responseText">Good evening. All local systems are standing by.</p>
+          </article>
+        </section>
+
+        <aside class="hud-column hud-right" aria-label="Environment and connected devices">
+          <section class="hud-section clock-section">
+            <div class="section-kicker"><span>04</span> LOCAL TIME</div>
+            <time class="clock-value" id="liveClock">--:--:--</time>
+            <div class="clock-date" id="liveDate">SYNCHRONIZING</div>
+          </section>
+
+          <section class="hud-section">
+            <div class="section-kicker"><span>05</span> COMPUTE NODE</div>
+            <div class="info-pair"><span>PROVIDER</span><strong id="providerName">OLLAMA</strong></div>
+            <div class="info-pair"><span>ACTIVE MODEL</span><strong id="modelName">llama3.2:3b</strong></div>
+            <div class="info-pair"><span>HOST DEVICE</span><strong id="hostInfo">BROWSER CLIENT</strong></div>
+            <div class="info-pair"><span>CONNECTION</span><strong id="connectionStatus">INITIALIZING</strong></div>
+          </section>
+
+          <section class="hud-section network-section">
+            <div class="section-heading">
+              <div class="section-kicker"><span>06</span> LOCAL NETWORK</div>
+              <span class="mini-live"><i></i> LAN</span>
+            </div>
+            <div class="network-list" id="networkList"><span class="muted-copy">Resolving local addresses…</span></div>
+          </section>
+
+          <section class="hud-section device-section">
+            <div class="section-heading">
+              <div class="section-kicker"><span>07</span> TRUSTED DEVICES</div>
+              <span class="device-count" id="deviceCount">--</span>
+            </div>
+            <div class="device-list" id="deviceList"><span class="muted-copy">Loading devices…</span></div>
+          </section>
+
+          <div class="right-footnote"><span>MODEL</span><strong id="modelHealth">LOCAL / CONFIGURED</strong></div>
+        </aside>
+      </main>
+
+      <footer class="command-dock">
+        <div class="dock-identity">
+          <span class="dock-indicator" id="dockIndicator"></span>
+          <span class="dock-state" id="dockState">READY</span>
+        </div>
+
+        <form class="composer" id="commandForm">
+          <label class="visually-hidden" for="commandInput">Send a command to Jarvis</label>
+          <textarea id="commandInput" rows="1" placeholder="Speak or enter a command…" autocomplete="off"></textarea>
+          <button class="mic-control" id="micButton" type="button" aria-label="Start voice input" title="Start voice input">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.75a3.25 3.25 0 0 0-3.25 3.25v5a3.25 3.25 0 0 0 6.5 0V6A3.25 3.25 0 0 0 12 2.75Z"/><path d="M5.5 10.5v.5a6.5 6.5 0 0 0 13 0v-.5M12 17.5v4m-3 0h6"/></svg>
+          </button>
+          <button class="send-control" id="sendButton" type="submit" aria-label="Send command" title="Send command">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.2 18-3.8-7-7-3.8L21 3Z"/><path d="M10 14 21 3"/></svg>
+          </button>
+        </form>
+
+        <div class="dock-caption"><span class="dock-key">ENTER</span> TO SEND <span class="dock-divider">·</span> <span id="dockMicStatus">MIC STANDBY</span></div>
+      </footer>
+    </div>
+
+    <section class="auth-overlay" id="authOverlay" aria-labelledby="authTitle">
+      <div class="auth-panel">
+        <div class="auth-mark"><span class="brand-mark" aria-hidden="true"><span></span></span><span>LOCAL NODE / 01</span></div>
+        <div class="auth-eyebrow"><span class="signal-dot"></span> PERSONAL SYSTEM ACCESS</div>
+        <h1 id="authTitle">JARVIS<span class="auth-period">.</span></h1>
+        <p class="auth-copy">Initialize a private session with your local assistant.</p>
+        <form class="auth-form" id="loginForm">
+          <label for="emailInput">IDENTITY</label>
+          <input id="emailInput" name="email" type="email" value="you@example.com" autocomplete="username" required />
+          <label for="passwordInput">ACCESS KEY</label>
+          <input id="passwordInput" name="password" type="password" value="demo1234" autocomplete="current-password" required />
+          <button class="auth-submit" type="submit"><span>INITIALIZE SESSION</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
+          <div class="auth-error" id="authError" role="alert"></div>
+        </form>
+        <div class="auth-foot"><span>LOCAL MODEL</span><span>OLLAMA · llama3.2:3b</span></div>
+      </div>
+    </section>
+
+    <dialog class="utility-dialog" id="historyDialog" aria-labelledby="historyTitle">
+      <div class="dialog-heading">
+        <div><div class="section-kicker">SESSION ARCHIVE</div><h2 id="historyTitle">Conversation history</h2></div>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close history">×</button>
+      </div>
+      <div class="history-list" id="historyList"><p class="muted-copy">No commands in this session yet.</p></div>
+    </dialog>
+
+    <dialog class="utility-dialog voice-dialog" id="voiceDialog" aria-labelledby="voiceTitle">
+      <div class="dialog-heading">
+        <div><div class="section-kicker">PERSONAL SETTINGS</div><h2 id="voiceTitle">Settings</h2></div>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close voice settings">×</button>
+      </div>
+      <form id="voiceForm" class="voice-settings">
+        <label for="assistantName">ASSISTANT NAME</label>
+        <input id="assistantName" type="text" value="Jarvis" maxlength="32" />
+        <label for="voiceSelect">SYSTEM VOICE</label>
+        <select id="voiceSelect"></select>
+        <div class="range-heading"><label for="rateRange">SPEECH RATE</label><output id="rateValue" for="rateRange">1.0×</output></div>
+        <input id="rateRange" type="range" min="0.6" max="1.8" step="0.1" value="1.0" />
+        <div class="range-heading"><label for="pitchRange">VOICE PITCH</label><output id="pitchValue" for="pitchRange">1.0</output></div>
+        <input id="pitchRange" type="range" min="0.5" max="2" step="0.1" value="1.0" />
+        <p class="settings-note">The selected voice language is used for listening and speech. Settings stay in this browser.</p>
+      </form>
+    </dialog>
+
+    <dialog class="utility-dialog" id="helpDialog" aria-labelledby="helpTitle">
+      <div class="dialog-heading">
+        <div><div class="section-kicker" id="helpSectionKicker">JARVIS GUIDE</div><h2 id="helpTitle">Help</h2></div>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close help">×</button>
+      </div>
+      <div class="help-content">
+        <section class="help-block">
+          <h3>Voice</h3>
+          <p id="voiceHelpText">Choose a voice in Settings. Its language is used for both speech and microphone recognition. Turn on Wake phrase, allow microphone access, then say “Hey Jarvis.” After Jarvis replies, it listens for your next turn.</p>
+        </section>
+        <section class="help-block">
+          <h3>Tasks you can do now</h3>
+          <p>Try “add task to call Sam,” “show my tasks,” “complete task 1,” or “delete task 1.” Your task list is saved in this browser.</p>
+        </section>
+        <section class="help-block">
+          <h3>Not connected yet</h3>
+          <p id="systemHelpText">Email, calendar, file operations, app launching, and real device control need separate integrations. JARVIS will chat about those requests but cannot perform them yet.</p>
+        </section>
+        <section class="help-block">
+          <h3>If voice stops</h3>
+          <p>Check microphone permission for this site, select an installed voice for your language, and switch Wake phrase off and on. Browser speech recognition may need internet access; use text input if its speech service is unavailable. Offline voice requires a local recognition engine.</p>
+        </section>
+      </div>
+    </dialog>
+
+    <div class="toast-region" id="toastRegion" aria-live="assertive" aria-atomic="true"></div>
+  </body>
+</html>

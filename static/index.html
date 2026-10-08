@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JARVIS — Personal AI Operating Assistant</title>
+    <style>
+      :root {
+        --bg: #07111f;
+        --panel: rgba(15, 23, 42, 0.9);
+        --panel-alt: rgba(17, 24, 39, 0.93);
+        --card: rgba(15, 118, 110, 0.14);
+        --accent: #7c3aed;
+        --accent-2: #10b981;
+        --accent-3: #38bdf8;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --user: #312e81;
+        --assistant: #1f2937;
+        --danger: #f87171;
+        --success: #4ade80;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, rgba(59,130,246,0.15), transparent 40%), linear-gradient(135deg, #020817, #111827 40%, #0f172a);
+        color: var(--text);
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+
+      .hidden { display: none !important; }
+
+      .auth-screen {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 40px 20px;
+        background: rgba(2, 6, 23, 0.75);
+      }
+
+      .auth-card {
+        width: min(480px, 100%);
+        background: rgba(15, 23, 42, 0.86);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 22px;
+        padding: 30px 28px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.45);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+
+      .tagline {
+        color: var(--muted);
+        margin-bottom: 20px;
+        line-height: 1.6;
+      }
+
+      .auth-form {
+        display: grid;
+        gap: 16px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field label {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .field input {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--text);
+        padding: 12px 14px;
+        font-size: 1rem;
+      }
+
+      .auth-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .remember {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        background: linear-gradient(135deg, var(--accent), var(--accent-3));
+        color: white;
+      }
+
+      .btn.secondary {
+        background: rgba(148, 163, 184, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        color: var(--text);
+      }
+
+      .app-shell {
+        width: min(1200px, 94vw);
+        margin: 26px auto;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 22px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 18px 18px 0 0;
+      }
+
+      .title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .little-mark {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 12px rgba(74, 222, 128, 0.9);
+      }
+
+      .title {
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .main-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-top: none;
+        border-radius: 0 0 18px 18px;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        padding: 18px 16px;
+        background: rgba(15, 23, 42, 0.92);
+        border-right: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .panel-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      .device-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .device-card {
+        background: rgba(15, 118, 110, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 14px;
+        padding: 12px;
+      }
+
+      .device-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .device-name {
+        font-weight: 700;
+      }
+
+      .device-state {
+        font-size: 0.72rem;
+        border-radius: 999px;
+        padding: 5px 8px;
+      }
+
+      .device-state.online {
+        background: rgba(74, 222, 128, 0.15);
+        color: var(--success);
+      }
+
+      .device-state.offline {
+        background: rgba(248, 113, 113, 0.12);
+        color: var(--danger);
+      }
+
+      .device-meta {
+        font-size: 0.77rem;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+
+      .device-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .device-actions button {
+        flex: 1;
+        border-radius: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(148, 163, 184, 0.04);
+        color: var(--text);
+        padding: 8px 10px;
+        font-size: 0.74rem;
+        cursor: pointer;
+      }
+
+      .device-actions .allow {
+        background: rgba(74, 222, 128, 0.12);
+        border-color: rgba(74, 222, 128, 0.38);
+        color: var(--success);
+      }
+
+      .device-actions .deny {
+        background: rgba(248, 113, 113, 0.06);
+        border-color: rgba(248, 113, 113, 0.32);
+        color: #fecaca;
+      }
+
+      .content {
+        padding: 0;
+      }
+
+      .network-box {
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        color: #dcfce7;
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin: 18px 20px 0;
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .network-box strong {
+        color: white;
+      }
+
+      .voice-panel {
+        margin: 16px 20px 0;
+        padding: 14px 16px;
+        background: rgba(31, 41, 55, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+      }
+
+      .voice-panel h3 {
+        margin: 0 0 12px;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .voice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .field input,
+      .field select {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--text);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+
+      .field input[type="range"] {
+        padding: 0;
+      }
+
+      .chat {
+        height: 56vh;
+        overflow-y: auto;
+        padding: 18px 20px;
+        background: rgba(15, 23, 42, 0.7);
+      }
+
+      .message {
+        max-width: 78%;
+        margin: 12px 0;
+        padding: 12px 14px;
+        border-radius: 16px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .message.user {
+        margin-left: auto;
+        background: var(--user);
+        border-bottom-right-radius: 4px;
+      }
+
+      .message.assistant {
+        background: var(--assistant);
+        border-bottom-left-radius: 4px;
+      }
+
+      .composer {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+        padding: 16px 18px 20px;
+        border-top: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(15, 23, 42, 0.9);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 48px;
+        max-height: 180px;
+        resize: vertical;
+        background: rgba(31, 41, 55, 0.9);
+        color: var(--text);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 1rem;
+      }
+
+      .mic { background: var(--accent-2); color: #062b12; }
+      .send { background: linear-gradient(135deg, var(--accent), var(--accent-3)); color: white; }
+
+      @media (max-width: 960px) {
+        .main-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          border-right: none;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .voice-grid, .composer {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-screen" id="authScreen">
+      <div class="auth-card">
+        <div class="brand">
+          <div class="brand-mark">J</div>
+          <h1>JARVIS</h1>
+        </div>
+
+        <div class="tagline">
+          Secure, personal AI access for your devices, files, calendar, messages, and everyday digital life.
+        </div>
+
+        <form class="auth-form" id="loginForm">
+          <div class="field">
+            <label for="emailInput">Work email</label>
+            <input id="emailInput" type="email" value="you@example.com" required />
+          </div>
+
+          <div class="field">
+            <label for="passwordInput">Password</label>
+            <input id="passwordInput" type="password" value="demo1234" required />
+          </div>
+
+          <div class="auth-actions">
+            <label class="remember"><input type="checkbox" checked /> Keep me signed in</label>
+            <button class="btn primary" type="submit">Sign in</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="app-shell hidden" id="appShell">
+      <div class="topbar">
+        <div class="title-wrap">
+          <div class="little-mark"></div>
+          <div class="title">JARVIS</div>
+        </div>
+        <div class="status" id="status">Ready</div>
+      </div>
+
+      <div class="main-layout">
+        <aside class="sidebar">
+          <div class="panel-title">Authorized devices</div>
+          <div class="device-list" id="deviceList"></div>
+        </aside>
+
+        <div class="content">
+          <div class="network-box" id="networkBox">
+            <strong>Local network access:</strong> loading device URLs...
+          </div>
+
+          <div class="voice-panel">
+            <h3>Personalized voice</h3>
+            <div class="voice-grid">
+              <div class="field">
+                <label for="assistantName">Assistant name</label>
+                <input id="assistantName" type="text" value="Jarvis" placeholder="Name your assistant" />
+              </div>
+
+              <div class="field">
+                <label for="voiceSelect">Voice</label>
+                <select id="voiceSelect"></select>
+              </div>
+
+              <div class="field">
+                <label for="rateRange">Rate: <span id="rateValue">1.0x</span></label>
+                <input id="rateRange" type="range" min="0.6" max="1.8" step="0.1" value="1.0" />
+              </div>
+
+              <div class="field">
+                <label for="pitchRange">Pitch: <span id="pitchValue">1.0</span></label>
+                <input id="pitchRange" type="range" min="0.5" max="2" step="0.1" value="1.0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="chat" id="chat"></div>
+
+          <div class="composer">
+            <textarea id="prompt" rows="1" placeholder="Hey Jarvis, ask me anything..."></textarea>
+            <button class="mic" id="micButton" type="button">🎙️ Mic</button>
+            <button class="send" id="sendButton" type="button">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const authScreen = document.getElementById('authScreen');
+      const appShell = document.getElementById('appShell');
+      const loginForm = document.getElementById('loginForm');
+      const deviceList = document.getElementById('deviceList');
+      const chat = document.getElementById('chat');
+      const prompt = document.getElementById('prompt');
+      const sendButton = document.getElementById('sendButton');
+      const micButton = document.getElementById('micButton');
+      const status = document.getElementById('status');
+      const networkBox = document.getElementById('networkBox');
+      const assistantNameInput = document.getElementById('assistantName');
+      const voiceSelect = document.getElementById('voiceSelect');
+      const rateRange = document.getElementById('rateRange');
+      const pitchRange = document.getElementById('pitchRange');
+      const rateValue = document.getElementById('rateValue');
+      const pitchValue = document.getElementById('pitchValue');
+
+      const history = [];
+      let wakeRecognition = null;
+
+      function triggerWakeResponse(transcript = '') {
+        const cleaned = transcript.replace(/.*?\bjarvis\b/i, '').trim();
+        const promptText = cleaned || '';
+        const greeting = 'Hello, how can I help you today? What have you been working on recently?';
+
+        addMessage('assistant', greeting);
+        speakText(greeting);
+
+        if (promptText) {
+          prompt.value = promptText;
+        } else {
+          prompt.value = '';
+        }
+
+        status.textContent = 'Wake phrase detected';
+        window.setTimeout(() => {
+          status.textContent = 'Ready';
+        }, 2200);
+      }
+
+      function startWakeWordListener() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition || wakeRecognition) {
+          return;
+        }
+
+        const recognition = new SpeechRecognition();
+        wakeRecognition = recognition;
+        recognition.lang = 'en-US';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          status.textContent = 'Listening for Jarvis...';
+        };
+
+        recognition.onresult = (event) => {
+          const combined = Array.from(event.results)
+            .map((result) => result[0].transcript)
+            .join(' ')
+            .trim();
+
+          if (!combined) return;
+
+          const hasWake = /(\bjarvis\b|\bjarvis\s*[,.-]?\s*|\bhey\s+jarvis\b)/i.test(combined);
+          if (hasWake) {
+            recognition.stop();
+            const textAfterWake = combined.replace(/.*?\bjarvis\b/i, '').trim();
+            triggerWakeResponse(textAfterWake || combined);
+          }
+        };
+
+        recognition.onerror = () => {
+          wakeRecognition = null;
+          status.textContent = 'Wake listener failed';
+          window.setTimeout(() => {
+            if (!wakeRecognition) startWakeWordListener();
+          }, 1000);
+        };
+
+        recognition.onend = () => {
+          wakeRecognition = null;
+          window.setTimeout(() => {
+            if (!wakeRecognition) startWakeWordListener();
+          }, 300);
+        };
+
+        recognition.start();
+      }
+
+      async function fetchDevices() {
+        try {
+          const response = await fetch('/api/devices');
+          const data = await response.json();
+          renderDevices(data.devices || []);
+        } catch (error) {
+          renderDevices([
+            { id: 'laptop', name: 'Personal Laptop', type: 'Windows PC', online: true, approved: true },
+            { id: 'phone', name: 'Android Phone', type: 'Mobile', online: true, approved: false },
+            { id: 'tablet', name: 'Tablet', type: 'Tablet', online: false, approved: true }
+          ]);
+        }
+      }
+
+      async function authorizeDevice(deviceId, approved) {
+        try {
+          await fetch('/api/devices/authorize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: deviceId, approved })
+          });
+          fetchDevices();
+          status.textContent = approved ? 'Device connected' : 'Device blocked';
+        } catch (error) {
+          status.textContent = 'Device update failed';
+        }
+      }
+
+      function renderDevices(devices) {
+        deviceList.innerHTML = '';
+
+        devices.forEach((device) => {
+          const card = document.createElement('div');
+          card.className = 'device-card';
+          card.innerHTML = `
+            <div class="device-top">
+              <div class="device-name">${device.name}</div>
+              <div class="device-state ${device.online ? 'online' : 'offline'}">${device.online ? 'Online' : 'Offline'}</div>
+            </div>
+            <div class="device-meta">${device.type} · ${device.last_seen || 'Unknown'}</div>
+            <div class="device-actions">
+              <button class="allow" data-device-id="${device.id}" data-approved="true">Allow</button>
+              <button class="deny" data-device-id="${device.id}" data-approved="false">Block</button>
+            </div>
+          `;
+          deviceList.appendChild(card);
+        });
+
+        deviceList.querySelectorAll('button').forEach((button) => {
+          button.addEventListener('click', () => {
+            const deviceId = button.getAttribute('data-device-id');
+            const approved = button.getAttribute('data-approved') === 'true';
+            authorizeDevice(deviceId, approved);
+          });
+        });
+      }
+
+      function saveVoiceSettings() {
+        const settings = {
+          assistantName: assistantNameInput.value || 'Jarvis',
+          voiceName: voiceSelect.value,
+          rate: rateRange.value,
+          pitch: pitchRange.value
+        };
+        localStorage.setItem('personalAssistantVoiceSettings', JSON.stringify(settings));
+      }
+
+      function loadVoiceSettings() {
+        const saved = JSON.parse(localStorage.getItem('personalAssistantVoiceSettings') || '{}');
+        assistantNameInput.value = saved.assistantName || 'Jarvis';
+        rateRange.value = saved.rate || '1.0';
+        pitchRange.value = saved.pitch || '1.0';
+        rateValue.textContent = `${Number(rateRange.value).toFixed(1)}x`;
+        pitchValue.textContent = Number(pitchRange.value).toFixed(1);
+      }
+
+      function populateVoiceOptions() {
+        const voices = window.speechSynthesis?.getVoices?.() || [];
+        voiceSelect.innerHTML = '';
+
+        if (!voices.length) {
+          const option = document.createElement('option');
+          option.textContent = 'No voices available yet';
+          option.value = '';
+          voiceSelect.appendChild(option);
+          return;
+        }
+
+        voices.forEach((voice) => {
+          const option = document.createElement('option');
+          option.value = voice.name;
+          option.textContent = `${voice.name} (${voice.lang})`;
+          voiceSelect.appendChild(option);
+        });
+
+        const saved = JSON.parse(localStorage.getItem('personalAssistantVoiceSettings') || '{}');
+        if (saved.voiceName && [...voiceSelect.options].some((option) => option.value === saved.voiceName)) {
+          voiceSelect.value = saved.voiceName;
+        }
+      }
+
+      function speakText(text) {
+        if (!('speechSynthesis' in window)) return;
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        const selectedVoice = window.speechSynthesis.getVoices().find((voice) => voice.name === voiceSelect.value);
+
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+
+        utterance.rate = Number(rateRange.value);
+        utterance.pitch = Number(pitchRange.value);
+        utterance.volume = 1;
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      }
+
+      async function loadNetworkInfo() {
+        try {
+          const response = await fetch('/api/network');
+          const data = await response.json();
+          const urls = Array.isArray(data.urls) ? data.urls : [];
+          const formatted = urls.length ? urls.join('  |  ') : 'No local network IP found yet';
+          networkBox.innerHTML = '<strong>Local network access:</strong> ' + formatted;
+        } catch (error) {
+          networkBox.innerHTML = '<strong>Local network access:</strong> Check your local network IP and open the app on port 8000.';
+        }
+      }
+
+      function addMessage(role, text) {
+        const el = document.createElement('div');
+        el.className = `message ${role}`;
+        el.textContent = text;
+        chat.appendChild(el);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      async function sendMessage() {
+        const text = prompt.value.trim();
+        if (!text) return;
+
+        addMessage('user', text);
+        history.push({ role: 'user', content: text });
+        prompt.value = '';
+        status.textContent = 'Thinking...';
+
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, history })
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || 'Request failed');
+          }
+
+          const reply = data.reply || 'I do not have a reply yet.';
+          addMessage('assistant', reply);
+          history.push({ role: 'assistant', content: reply });
+          status.textContent = 'Ready';
+          speakText(reply);
+        } catch (error) {
+          addMessage('assistant', `Error: ${error.message}`);
+          status.textContent = 'Error';
+        }
+      }
+
+      loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = document.getElementById('emailInput').value.trim();
+        const password = document.getElementById('passwordInput').value.trim();
+
+        try {
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || 'Login failed');
+          }
+
+          authScreen.classList.add('hidden');
+          appShell.classList.remove('hidden');
+          status.textContent = `Signed in as ${data.user}`;
+          fetchDevices();
+          startWakeWordListener();
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      });
+
+      assistantNameInput.addEventListener('input', saveVoiceSettings);
+      voiceSelect.addEventListener('change', saveVoiceSettings);
+      rateRange.addEventListener('input', () => {
+        rateValue.textContent = `${Number(rateRange.value).toFixed(1)}x`;
+        saveVoiceSettings();
+      });
+      pitchRange.addEventListener('input', () => {
+        pitchValue.textContent = Number(pitchRange.value).toFixed(1);
+        saveVoiceSettings();
+      });
+
+      loadVoiceSettings();
+      populateVoiceOptions();
+      if ('speechSynthesis' in window) {
+        speechSynthesis.onvoiceschanged = populateVoiceOptions;
+      }
+      loadNetworkInfo();
+      fetchDevices();
+      startWakeWordListener();
+
+      sendButton.addEventListener('click', sendMessage);
+      prompt.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+
+      micButton.addEventListener('click', () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          status.textContent = 'Speech recognition is not available in this browser';
+          return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          status.textContent = 'Listening...';
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          const cleaned = transcript.replace(/^hey\s+jarvis\s+/i, '').trim();
+          prompt.value = cleaned || transcript;
+          status.textContent = 'Voice captured';
+          recognition.stop();
+        };
+
+        recognition.onerror = () => {
+          status.textContent = 'Voice input failed';
+        };
+
+        recognition.onend = () => {
+          status.textContent = 'Ready';
+        };
+
+        recognition.start();
+      });
+    </script>
+  </body>
+</html>
